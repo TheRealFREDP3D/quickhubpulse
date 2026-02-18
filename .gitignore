@@ -114,3 +114,4 @@ temp/
 /telemetry-id
 /.prettierignore
 /.prettierrc
+/package-lock.json
