@@ -111,3 +111,6 @@ temp/
 /AGENTS.md
 /.qodo
 /.manus-logs
+/telemetry-id
+/.prettierignore
+/.prettierrc
