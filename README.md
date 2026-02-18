@@ -2,8 +2,11 @@
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/42159a2a-49a0-4155-bec7-8f5dff3f7745/deploy-status)](https://app.netlify.com/projects/gitmystats/deploys)
 
-
 A streamlined, modern dashboard for quick repository overview with detailed insights. Built with React 19, Tailwind CSS, and Vite.
+
+## Live Demo
+
+[https://gitmystats.netlify.app/](https://gitmystats.netlify.app/)
 
 ## Features
 
