@@ -64,7 +64,7 @@ pnpm install
 pnpm run dev
 ```
 
-The application will be available at `http://localhost:3001` (or another port if 3001 is in use).
+The application will be available at `http://localhost:3000` (or another port if 3000 is in use).
 
 ### Usage
 
