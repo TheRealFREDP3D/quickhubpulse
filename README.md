@@ -55,7 +55,7 @@ Click any repository card to open a detailed modal with:
 ```bash
 # Clone the repository
 git clone https://github.com/TheRealFREDP3D/github-stats-dashboard
-cd github-stats-dashboard-simplified
+cd github-stats-dashboard
 
 # Install dependencies
 pnpm install
