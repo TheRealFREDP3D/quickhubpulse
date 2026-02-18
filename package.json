@@ -1,8 +1,32 @@
 {
-  "name": "github-stats-dashboard-simplified",
+  "name": "github-stats-dashboard",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "description": "GitHub Stats Dashboard - Track and analyze your GitHub repositories",
+  "author": "Your Name",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/github-stats-dashboard"
+  },
+  "homepage": "https://github.com/yourusername/github-stats-dashboard#readme",
+  "keywords": [
+    "github",
+    "dashboard",
+    "stats",
+    "analytics",
+    "react"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
   "scripts": {
     "dev": "vite --host",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
