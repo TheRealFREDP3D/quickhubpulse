@@ -54,7 +54,7 @@ Click any repository card to open a detailed modal with:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/TheRealFREDP3D/github-stats-dashboard
 cd github-stats-dashboard-simplified
 
 # Install dependencies
