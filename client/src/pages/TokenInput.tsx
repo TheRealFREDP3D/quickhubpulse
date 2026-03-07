@@ -15,15 +15,19 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const inputValue = useToken ? token.trim() : username.trim();
+    const isTokenMode = useToken;
+    const tokenValue = token.trim();
+    const usernameValue = username.trim();
+    const inputValue = isTokenMode ? tokenValue : usernameValue;
+    
     if (inputValue) {
       setLoading(true);
       // Small delay to show loading state
       setTimeout(() => {
-        if (useToken) {
-          onSubmit(token.trim());
+        if (isTokenMode) {
+          onSubmit(tokenValue);
         } else {
-          onSubmit("", username.trim());
+          onSubmit("", usernameValue);
         }
         setLoading(false);
       }, 300);

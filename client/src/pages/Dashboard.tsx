@@ -253,8 +253,18 @@ export default function Dashboard({ token, username, onLogout }: DashboardProps)
         {/* Error State */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            <p className="font-semibold mb-1">Error loading repositories</p>
-            <p className="text-sm">{error}</p>
+            <p className="font-semibold mb-2">Error loading repositories</p>
+            <div className="text-sm whitespace-pre-line">{error}</div>
+            {error.includes('403') && (
+              <div className="mt-3 p-3 bg-red-100 rounded-md">
+                <p className="text-xs font-medium mb-1">Quick fixes:</p>
+                <ul className="text-xs space-y-1 list-disc list-inside">
+                  <li>Wait a few minutes and try again (rate limit)</li>
+                  <li>Check your access token is valid and has correct permissions</li>
+                  <li>Try using a different GitHub username</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

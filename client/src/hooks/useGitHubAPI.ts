@@ -34,92 +34,100 @@ interface UseGitHubAPIReturn {
 
 const GITHUB_API_BASE = "https://api.github.com";
 
+type TrafficViews = { count: number; uniques: number; views: any[] };
+type TrafficClones = { count: number; uniques: number; clones: any[] };
+
+const buildReposUrl = (token?: string, username?: string): string => {
+  if (username) {
+    return `${GITHUB_API_BASE}/users/${username}/repos?sort=updated&per_page=100`;
+  }
+  if (token) {
+    return `${GITHUB_API_BASE}/user/repos?sort=updated&per_page=100`;
+  }
+  throw new Error("Either token or username is required");
+};
+
+const buildHeaders = (token?: string): Record<string, string> => ({
+  Accept: "application/vnd.github.v3+json",
+  ...(token ? { Authorization: `token ${token}` } : {}),
+});
+
 export function useGitHubAPI(token: string, username?: string): UseGitHubAPIReturn {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchWithAuth = async (url: string) => {
-    const headers: Record<string, string> = {
-      Accept: "application/vnd.github.v3+json",
-    };
-    
-    if (token) {
-      headers.Authorization = `token ${token}`;
-    }
-    
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, { headers: buildHeaders(token) });
     if (!response.ok) {
-      throw new Error(
-        `GitHub API error: ${response.status} ${response.statusText}`
-      );
+      let errorMessage = `GitHub API error: ${response.status} ${response.statusText}`;
+      
+      if (response.status === 403) {
+        if (token) {
+          errorMessage = "GitHub API error: 403 Forbidden. This could be due to:\n• Invalid or expired access token\n• Token lacks required permissions (repo or public_repo scope)\n• API rate limit exceeded";
+        } else {
+          errorMessage = "GitHub API error: 403 Forbidden. This could be due to:\n• API rate limit exceeded for unauthenticated requests\n• Try again in a few minutes or use an access token";
+        }
+      } else if (response.status === 404) {
+        errorMessage = "GitHub API error: 404 Not Found. The user may not exist or has no public repositories.";
+      } else if (response.status === 401) {
+        errorMessage = "GitHub API error: 401 Unauthorized. The access token is invalid or has been revoked.";
+      }
+      
+      throw new Error(errorMessage);
     }
     return response.json();
   };
 
+  const getTrafficStats = async (
+    repo: any,
+    token?: string
+  ): Promise<{ views: TrafficViews; clones: TrafficClones }> => {
+    const defaultViews = { count: 0, uniques: 0, views: [] };
+    const defaultClones = { count: 0, uniques: 0, clones: [] };
+
+    if (!token) return { views: defaultViews, clones: defaultClones };
+
+    const [views, clones] = await Promise.all([
+      fetchWithAuth(
+        `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/traffic/views`
+      ).catch(() => defaultViews),
+      fetchWithAuth(
+        `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/traffic/clones`
+      ).catch(() => defaultClones),
+    ]);
+
+    return { views, clones };
+  };
+
   const fetchRepositories = async () => {
+    if (!token && !username) {
+      setError("Either token or username is required");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      // Determine which endpoint to use based on whether we have a username or token
-      let reposUrl: string;
-      if (username) {
-        // Fetch public repositories for the specified username
-        reposUrl = `${GITHUB_API_BASE}/users/${username}/repos?sort=updated&per_page=100`;
-      } else if (token) {
-        // Fetch user's repositories (both public and private) using token
-        reposUrl = `${GITHUB_API_BASE}/user/repos?sort=updated&per_page=100`;
-      } else {
-        throw new Error("Either token or username is required");
-      }
-
+      const reposUrl = buildReposUrl(token, username);
       const repos = await fetchWithAuth(reposUrl);
 
       // Fetch additional stats for each repository
       const reposWithStats = await Promise.all(
         repos.map(async (repo: any) => {
           try {
-            // Only fetch traffic data (views and clones) if we have a token
-            // Traffic data requires authentication and is not available for public access
-            let views = { count: 0, uniques: 0, views: [] };
-            let clones = { count: 0, uniques: 0, clones: [] };
-            
-            if (token) {
-              try {
-                [views, clones] = await Promise.all([
-                  fetchWithAuth(
-                    `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/traffic/views`
-                  ).catch(() => ({ count: 0, uniques: 0, views: [] })),
-                  fetchWithAuth(
-                    `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/traffic/clones`
-                  ).catch(() => ({ count: 0, uniques: 0, clones: [] })),
-                ]);
-              } catch (trafficError) {
-                // Traffic data is not available for public repos or token doesn't have access
-                console.warn(`Traffic data not available for ${repo.name}:`, trafficError);
-              }
-            }
+            const { views, clones } = await getTrafficStats(repo, token);
 
             // Fetch pull requests and issues counts (available for public repos)
             const [pullsResponse, issuesResponse] = await Promise.all([
               fetch(
                 `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/pulls?state=all&per_page=1`,
-                {
-                  headers: {
-                    ...(token && { Authorization: `token ${token}` }),
-                    Accept: "application/vnd.github.v3+json",
-                  },
-                }
+                { headers: buildHeaders(token) }
               ),
               fetch(
                 `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/issues?state=all&per_page=1`,
-                {
-                  headers: {
-                    ...(token && { Authorization: `token ${token}` }),
-                    Accept: "application/vnd.github.v3+json",
-                  },
-                }
+                { headers: buildHeaders(token) }
               ),
             ]);
 
