@@ -7,13 +7,16 @@ import TokenInput from "./pages/TokenInput";
 
 function App() {
   const [token, setToken] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
 
-  const handleTokenSubmit = (submittedToken: string) => {
+  const handleTokenSubmit = (submittedToken: string, submittedUsername?: string) => {
     setToken(submittedToken);
+    setUsername(submittedUsername || "");
   };
 
   const handleLogout = () => {
     setToken("");
+    setUsername("");
   };
 
   return (
@@ -21,10 +24,10 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          {!token ? (
+          {!(token || username) ? (
             <TokenInput onSubmit={handleTokenSubmit} />
           ) : (
-            <Dashboard token={token} onLogout={handleLogout} />
+            <Dashboard token={token} username={username} onLogout={handleLogout} />
           )}
         </TooltipProvider>
       </ThemeProvider>

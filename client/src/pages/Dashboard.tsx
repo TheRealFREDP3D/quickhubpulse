@@ -21,11 +21,12 @@ type SortOption = "stars" | "forks" | "recent" | "views";
 
 interface DashboardProps {
   token: string;
+  username?: string;
   onLogout: () => void;
 }
 
-export default function Dashboard({ token, onLogout }: DashboardProps) {
-  const { repositories, loading, error, refetch } = useGitHubAPI(token);
+export default function Dashboard({ token, username, onLogout }: DashboardProps) {
+  const { repositories, loading, error, refetch, fetchDetailedStats } = useGitHubAPI(token, username);
   const { saveStats } = useLocalStats();
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,7 +70,7 @@ export default function Dashboard({ token, onLogout }: DashboardProps) {
         case "forks":
           return b.forks - a.forks;
         case "views":
-          return b.views - a.views;
+          return (b.views || 0) - (a.views || 0);
         case "recent":
           return (
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -117,9 +118,16 @@ export default function Dashboard({ token, onLogout }: DashboardProps) {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Github className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">
-              GitHub Stats Dashboard
-            </h1>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">
+                GitHub Stats Dashboard
+              </h1>
+              {username && (
+                <p className="text-xs text-slate-600">
+                  Viewing public repositories for <span className="font-medium">{username}</span>
+                </p>
+              )}
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -144,6 +152,21 @@ export default function Dashboard({ token, onLogout }: DashboardProps) {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Public Data Notice */}
+        {username && !loading && !error && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0">ℹ️</div>
+              <div className="text-sm text-amber-800">
+                <p className="font-medium mb-1">Public Access Mode</p>
+                <p className="text-xs">
+                  You're viewing public repository information only. Traffic data (views/clones) and private repositories are not accessible without authentication.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Keyboard Hint */}
         {showKeyboardHint && filteredAndSortedRepositories.length > 0 && (
           <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start justify-between">
@@ -230,8 +253,18 @@ export default function Dashboard({ token, onLogout }: DashboardProps) {
         {/* Error State */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            <p className="font-semibold mb-1">Error loading repositories</p>
-            <p className="text-sm">{error}</p>
+            <p className="font-semibold mb-2">Error loading repositories</p>
+            <div className="text-sm whitespace-pre-line">{error}</div>
+            {error.includes('403') && (
+              <div className="mt-3 p-3 bg-red-100 rounded-md">
+                <p className="text-xs font-medium mb-1">Quick fixes:</p>
+                <ul className="text-xs space-y-1 list-disc list-inside">
+                  <li>Wait a few minutes and try again (rate limit)</li>
+                  <li>Check your access token is valid and has correct permissions</li>
+                  <li>Try using a different GitHub username</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -280,6 +313,7 @@ export default function Dashboard({ token, onLogout }: DashboardProps) {
             repo={selectedRepo}
             onClose={() => setSelectedRepo(null)}
             layoutId={`repo-${selectedRepo.id}`}
+            fetchDetailedStats={fetchDetailedStats}
           />
         )}
       </AnimatePresence>
