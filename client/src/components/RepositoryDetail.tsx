@@ -10,9 +10,11 @@ import {
   Star,
   TrendingUp,
   X,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
+import { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -28,18 +30,52 @@ interface RepositoryDetailProps {
   repo: Repository;
   onClose: () => void;
   layoutId: string;
+  fetchDetailedStats: (repo: Repository) => Promise<Repository>;
 }
 
 export function RepositoryDetail({
   repo,
   onClose,
   layoutId,
+  fetchDetailedStats,
 }: RepositoryDetailProps) {
+  const [detailedRepo, setDetailedRepo] = useState<Repository | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch detailed stats when component mounts
+  useEffect(() => {
+    const loadStats = async () => {
+      // Skip if stats are already loaded
+      if (repo.views !== undefined || !repo.owner) {
+        setDetailedRepo(repo);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const detailed = await fetchDetailedStats(repo);
+        setDetailedRepo(detailed);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load detailed stats");
+        setDetailedRepo(repo); // Fallback to basic repo data
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [repo, fetchDetailedStats]);
+
+  const currentRepo = detailedRepo || repo;
+
   // Combine views and clones data for chart
-  const chartData = repo.viewsData.map((view, idx) => ({
+  const chartData = (currentRepo.viewsData || []).map((view, idx) => ({
     date: view.date,
     views: view.count,
-    clones: repo.clonesData[idx]?.count || 0,
+    clones: (currentRepo.clonesData || [])[idx]?.count || 0,
   }));
 
   return (
@@ -106,6 +142,17 @@ export function RepositoryDetail({
               <h3 className="text-lg font-bold text-slate-900 mb-4">
                 Overview
               </h3>
+              {loading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
+                  <span className="text-slate-600">Loading detailed stats...</span>
+                </div>
+              )}
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -113,10 +160,14 @@ export function RepositoryDetail({
                     <span className="text-sm text-slate-600">Views</span>
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
-                    {repo.views}
+                    {loading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    ) : (
+                      currentRepo.views || 0
+                    )}
                   </div>
                   <div className="text-xs text-slate-500">
-                    {repo.uniqueViews} unique
+                    {currentRepo.uniqueViews || 0} unique
                   </div>
                 </div>
 
@@ -126,10 +177,14 @@ export function RepositoryDetail({
                     <span className="text-sm text-slate-600">Clones</span>
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
-                    {repo.clones}
+                    {loading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    ) : (
+                      currentRepo.clones || 0
+                    )}
                   </div>
                   <div className="text-xs text-slate-500">
-                    {repo.uniqueClones} unique
+                    {currentRepo.uniqueClones || 0} unique
                   </div>
                 </div>
 
@@ -139,7 +194,7 @@ export function RepositoryDetail({
                     <span className="text-sm text-slate-600">Stars</span>
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
-                    {repo.stars}
+                    {currentRepo.stars}
                   </div>
                 </div>
 
@@ -149,7 +204,7 @@ export function RepositoryDetail({
                     <span className="text-sm text-slate-600">Forks</span>
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
-                    {repo.forks}
+                    {currentRepo.forks}
                   </div>
                 </div>
 
@@ -161,7 +216,11 @@ export function RepositoryDetail({
                     </span>
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
-                    {repo.totalPulls}
+                    {loading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    ) : (
+                      currentRepo.totalPulls || 0
+                    )}
                   </div>
                 </div>
 
@@ -171,7 +230,11 @@ export function RepositoryDetail({
                     <span className="text-sm text-slate-600">Issues</span>
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
-                    {repo.totalIssues}
+                    {loading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    ) : (
+                      currentRepo.totalIssues || 0
+                    )}
                   </div>
                 </div>
               </div>

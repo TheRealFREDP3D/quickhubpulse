@@ -26,7 +26,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ token, username, onLogout }: DashboardProps) {
-  const { repositories, loading, error, refetch } = useGitHubAPI(token, username);
+  const { repositories, loading, error, refetch, fetchDetailedStats } = useGitHubAPI(token, username);
   const { saveStats } = useLocalStats();
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,7 +70,7 @@ export default function Dashboard({ token, username, onLogout }: DashboardProps)
         case "forks":
           return b.forks - a.forks;
         case "views":
-          return b.views - a.views;
+          return (b.views || 0) - (a.views || 0);
         case "recent":
           return (
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -313,6 +313,7 @@ export default function Dashboard({ token, username, onLogout }: DashboardProps)
             repo={selectedRepo}
             onClose={() => setSelectedRepo(null)}
             layoutId={`repo-${selectedRepo.id}`}
+            fetchDetailedStats={fetchDetailedStats}
           />
         )}
       </AnimatePresence>

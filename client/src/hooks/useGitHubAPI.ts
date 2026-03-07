@@ -15,14 +15,15 @@ export interface Repository {
   createdAt: string;
   defaultBranch: string;
   socialImage: string;
-  views: number;
-  uniqueViews: number;
-  clones: number;
-  uniqueClones: number;
-  totalPulls: number;
-  totalIssues: number;
-  viewsData: Array<{ date: string; count: number; uniques: number }>;
-  clonesData: Array<{ date: string; count: number; uniques: number }>;
+  // Detailed stats - loaded lazily
+  views?: number;
+  uniqueViews?: number;
+  clones?: number;
+  uniqueClones?: number;
+  totalPulls?: number;
+  totalIssues?: number;
+  viewsData?: Array<{ date: string; count: number; uniques: number }>;
+  clonesData?: Array<{ date: string; count: number; uniques: number }>;
 }
 
 interface UseGitHubAPIReturn {
@@ -30,16 +31,74 @@ interface UseGitHubAPIReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  fetchDetailedStats: (repo: Repository) => Promise<Repository>;
 }
 
 const GITHUB_API_BASE = "https://api.github.com";
 
+// Simple concurrency limiter
+class ConcurrencyLimiter {
+  private running = 0;
+  private queue: (() => void)[] = [];
+  
+  constructor(private limit: number = 5) {}
+  
+  async execute<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const run = async () => {
+        this.running++;
+        try {
+          const result = await task();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        } finally {
+          this.running--;
+          this.processQueue();
+        }
+      };
+      
+      if (this.running < this.limit) {
+        run();
+      } else {
+        this.queue.push(run);
+      }
+    });
+  }
+  
+  private processQueue() {
+    if (this.queue.length > 0 && this.running < this.limit) {
+      const next = this.queue.shift();
+      if (next) next();
+    }
+  }
+}
+
+const statsLimiter = new ConcurrencyLimiter(5);
+const statsCache = new Map<string, Repository>();
+
 type TrafficViews = { count: number; uniques: number; views: any[] };
 type TrafficClones = { count: number; uniques: number; clones: any[] };
 
+const validateUsername = (username: string): boolean => {
+  // GitHub usernames: 1-39 characters, alphanumeric and hyphens
+  // Cannot start or end with hyphen
+  const usernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+  return usernameRegex.test(username);
+};
+
 const buildReposUrl = (token?: string, username?: string): string => {
   if (username) {
-    return `${GITHUB_API_BASE}/users/${username}/repos?sort=updated&per_page=100`;
+    const trimmedUsername = username.trim();
+    
+    // Validate username format
+    if (!validateUsername(trimmedUsername)) {
+      throw new Error("Invalid GitHub username format");
+    }
+    
+    // Encode username for safe URL construction
+    const safeUsername = encodeURIComponent(trimmedUsername);
+    return `${GITHUB_API_BASE}/users/${safeUsername}/repos?sort=updated&per_page=100`;
   }
   if (token) {
     return `${GITHUB_API_BASE}/user/repos?sort=updated&per_page=100`;
@@ -79,6 +138,91 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
     return response.json();
   };
 
+  const fetchResponseWithOptionalAuth = async (url: string): Promise<Response> => {
+    const response = await fetch(url, { headers: buildHeaders(token) });
+    if (!response.ok) {
+      // Log warning but don't throw - we'll handle fallbacks
+      console.warn(`GitHub API warning: ${response.status} ${response.statusText} for ${url}`);
+    }
+    return response;
+  };
+
+  const fetchCountWithFallback = async (url: string): Promise<number> => {
+    try {
+      const response = await fetchResponseWithOptionalAuth(url);
+      if (!response.ok) {
+        return 0;
+      }
+      
+      const linkHeader = response.headers.get("Link");
+      if (!linkHeader) {
+        return 0;
+      }
+      
+      const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+      return match ? parseInt(match[1], 10) : 0;
+    } catch (error) {
+      // Network errors or other issues
+      console.warn(`Failed to fetch count for ${url}:`, error);
+      return 0;
+    }
+  };
+
+  const fetchDetailedStats = async (repo: Repository): Promise<Repository> => {
+    const cacheKey = `${repo.owner}/${repo.name}`;
+    
+    // Check cache first
+    if (statsCache.has(cacheKey)) {
+      return statsCache.get(cacheKey)!;
+    }
+    
+    return statsLimiter.execute(async () => {
+      try {
+        // Skip expensive stats for public mode (no token)
+        if (!token) {
+          return repo;
+        }
+        
+        const { views, clones } = await getTrafficStats(repo, token);
+        
+        // Fetch pull requests and issues counts with proper error handling
+        const [pullsCount, issuesCount] = await Promise.all([
+          fetchCountWithFallback(`${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/pulls?state=all&per_page=1`),
+          fetchCountWithFallback(`${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/issues?state=all&per_page=1`),
+        ]);
+        
+        // Format traffic data for charts
+        const formatTrafficData = (data: any[]) => {
+          return data.map((item: any) => ({
+            date: item.timestamp.split("T")[0],
+            count: item.count,
+            uniques: item.uniques,
+          }));
+        };
+        
+        const detailedRepo: Repository = {
+          ...repo,
+          views: views.count || 0,
+          uniqueViews: views.uniques || 0,
+          clones: clones.count || 0,
+          uniqueClones: clones.uniques || 0,
+          totalPulls: pullsCount,
+          totalIssues: issuesCount,
+          viewsData: formatTrafficData(views.views || []),
+          clonesData: formatTrafficData(clones.clones || []),
+        };
+        
+        // Cache the result
+        statsCache.set(cacheKey, detailedRepo);
+        
+        return detailedRepo;
+      } catch (error) {
+        console.error(`Error fetching detailed stats for ${repo.name}:`, error);
+        return repo;
+      }
+    });
+  };
+
   const getTrafficStats = async (
     repo: any,
     token?: string
@@ -113,103 +257,37 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
       const reposUrl = buildReposUrl(token, username);
       const repos = await fetchWithAuth(reposUrl);
 
-      // Fetch additional stats for each repository
-      const reposWithStats = await Promise.all(
-        repos.map(async (repo: any) => {
-          try {
-            const { views, clones } = await getTrafficStats(repo, token);
+      // Return basic repository data without expensive stats
+      const basicRepos: Repository[] = repos.map((repo: any) => ({
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.full_name,
+        description: repo.description,
+        url: repo.html_url,
+        owner: repo.owner.login,
+        stars: repo.stargazers_count,
+        forks: repo.forks_count,
+        openIssues: repo.open_issues_count,
+        language: repo.language,
+        updatedAt: repo.updated_at,
+        createdAt: repo.created_at,
+        defaultBranch: repo.default_branch || "main",
+        socialImage: `https://opengraph.githubassets.com/1/${repo.full_name}`,
+        // Detailed stats are undefined until loaded
+      }));
 
-            // Fetch pull requests and issues counts (available for public repos)
-            const [pullsResponse, issuesResponse] = await Promise.all([
-              fetch(
-                `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/pulls?state=all&per_page=1`,
-                { headers: buildHeaders(token) }
-              ),
-              fetch(
-                `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/issues?state=all&per_page=1`,
-                { headers: buildHeaders(token) }
-              ),
-            ]);
-
-            // Parse Link header to get total count
-            const parseLinkHeader = (header: string | null) => {
-              if (!header) return 0;
-              const match = header.match(/page=(\d+)>; rel="last"/);
-              return match ? parseInt(match[1], 10) : 1;
-            };
-
-            const pullsCount =
-              parseLinkHeader(pullsResponse.headers.get("Link")) || 0;
-            const issuesCount =
-              parseLinkHeader(issuesResponse.headers.get("Link")) || 0;
-
-            // Format traffic data for charts
-            const formatTrafficData = (data: any[]) => {
-              return data.map((item: any) => ({
-                date: item.timestamp.split("T")[0],
-                count: item.count,
-                uniques: item.uniques,
-              }));
-            };
-
-            return {
-              id: repo.id,
-              name: repo.name,
-              fullName: repo.full_name,
-              description: repo.description,
-              url: repo.html_url,
-              owner: repo.owner.login,
-              stars: repo.stargazers_count,
-              forks: repo.forks_count,
-              openIssues: repo.open_issues_count,
-              language: repo.language,
-              updatedAt: repo.updated_at,
-              createdAt: repo.created_at,
-              defaultBranch: repo.default_branch,
-              socialImage: `https://opengraph.githubassets.com/1/${repo.full_name}`,
-              views: views.count || 0,
-              uniqueViews: views.uniques || 0,
-              clones: clones.count || 0,
-              uniqueClones: clones.uniques || 0,
-              totalPulls: pullsCount,
-              totalIssues: issuesCount,
-              viewsData: formatTrafficData(views.views || []),
-              clonesData: formatTrafficData(clones.clones || []),
-            };
-          } catch (err) {
-            console.error(`Error fetching stats for ${repo.name}:`, err);
-            return {
-              id: repo.id,
-              name: repo.name,
-              fullName: repo.full_name,
-              description: repo.description,
-              url: repo.html_url,
-              owner: repo.owner.login,
-              stars: repo.stargazers_count,
-              forks: repo.forks_count,
-              openIssues: repo.open_issues_count,
-              language: repo.language,
-              updatedAt: repo.updated_at,
-              createdAt: repo.created_at,
-              defaultBranch: repo.default_branch || "main",
-              socialImage: `https://opengraph.githubassets.com/1/${repo.full_name}`,
-              views: 0,
-              uniqueViews: 0,
-              clones: 0,
-              uniqueClones: 0,
-              totalPulls: 0,
-              totalIssues: 0,
-              viewsData: [],
-              clonesData: [],
-            };
-          }
-        })
-      );
-
-      setRepositories(reposWithStats);
+      setRepositories(basicRepos);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch repositories";
+      let errorMessage = "Failed to fetch repositories";
+      
+      if (err instanceof Error) {
+        if (err.message === "Invalid GitHub username format") {
+          errorMessage = "Invalid GitHub username. Usernames must be 1-39 characters long and can only contain letters, numbers, and hyphens (cannot start or end with a hyphen).";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       console.error("Error fetching repositories:", err);
     } finally {
@@ -223,5 +301,5 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
     }
   }, [token, username]);
 
-  return { repositories, loading, error, refetch: fetchRepositories };
+  return { repositories, loading, error, refetch: fetchRepositories, fetchDetailedStats };
 }
