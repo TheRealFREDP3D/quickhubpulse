@@ -17,11 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated `package.json` with correct author, repository, and homepage information.
 - Updated version to `1.1.0`.
-- Commented out analytics script in `index.html` to avoid build warnings when variables are missing.
+- Implemented runtime conditional loading for analytics to avoid build warnings while maintaining functionality.
 
 ### Fixed
 
-- Build warnings related to undefined environment variables in `index.html`.
+- Analytics configuration mismatch by implementing runtime conditional loading, eliminating build warnings while preserving functionality.
 
 ## [1.0.0] - 2025-02-18
 
