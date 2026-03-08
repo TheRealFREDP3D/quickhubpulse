@@ -54,12 +54,14 @@ export function RepositoryDetail({
 
       setLoading(true);
       setError(null);
-      
+
       try {
         const detailed = await fetchDetailedStats(repo);
         setDetailedRepo(detailed);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load detailed stats");
+        setError(
+          err instanceof Error ? err.message : "Failed to load detailed stats"
+        );
         setDetailedRepo(repo); // Fallback to basic repo data
       } finally {
         setLoading(false);
@@ -145,7 +147,9 @@ export function RepositoryDetail({
               {loading && (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
-                  <span className="text-slate-600">Loading detailed stats...</span>
+                  <span className="text-slate-600">
+                    Loading detailed stats...
+                  </span>
                 </div>
               )}
               {error && (

@@ -7,8 +7,9 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package files
+# Copy package files and patches
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -16,8 +17,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
-RUN pnpm build
+# Copy pre-built dist folder (run 'pnpm build' locally first)
+COPY dist/ ./dist/
 
 # Stage 2: Runtime stage
 FROM node:22-alpine

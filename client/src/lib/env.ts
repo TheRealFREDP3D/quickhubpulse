@@ -210,6 +210,15 @@ export const env = {
   get SOURCEMAP(): boolean {
     return parseBoolean(import.meta.env.VITE_SOURCEMAP, false);
   },
+
+  // OAuth Configuration
+  get OAUTH_PORTAL_URL(): string {
+    return parseString(import.meta.env.VITE_OAUTH_PORTAL_URL, "");
+  },
+
+  get APP_ID(): string {
+    return parseString(import.meta.env.VITE_APP_ID, "");
+  },
 } as const;
 
 /**
@@ -312,6 +321,17 @@ export function validateEnvironment(): void {
     logger.warn("Invalid API_RATE_LIMIT, using default");
   }
 
+  // Validate OAuth configuration
+  if (!env.OAUTH_PORTAL_URL) {
+    logger.warn("OAuth portal URL not configured - OAuth login will not work");
+  } else if (!env.OAUTH_PORTAL_URL.startsWith("http")) {
+    logger.warn("Invalid OAUTH_PORTAL_URL format");
+  }
+
+  if (!env.APP_ID) {
+    logger.warn("OAuth app ID not configured - OAuth login will not work");
+  }
+
   logger.info("Environment validation completed");
 }
 
@@ -352,5 +372,7 @@ export function getEnvironmentSnapshot(): Record<string, unknown> {
     CACHE_REPOS: env.CACHE_REPOS,
     BUILD_DIR: env.BUILD_DIR,
     SOURCEMAP: env.SOURCEMAP,
+    OAUTH_PORTAL_URL: env.OAUTH_PORTAL_URL,
+    APP_ID: env.APP_ID,
   };
 }

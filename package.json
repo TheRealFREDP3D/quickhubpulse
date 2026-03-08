@@ -1,15 +1,15 @@
 {
   "name": "github-stats-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "license": "MIT",
   "description": "GitHub Stats Dashboard - Track and analyze your GitHub repositories",
-  "author": "Your Name",
+  "author": "Frederick Pellerin <fredp3d@proton.me>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/github-stats-dashboard"
+    "url": "https://github.com/TheRealFREDP3D/github-stats-dashboard"
   },
-  "homepage": "https://github.com/yourusername/github-stats-dashboard#readme",
+  "homepage": "https://github.com/TheRealFREDP3D/github-stats-dashboard#readme",
   "keywords": [
     "github",
     "dashboard",
@@ -33,7 +33,8 @@
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

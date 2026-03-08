@@ -9,7 +9,10 @@ function App() {
   const [token, setToken] = useState<string>("");
   const [username, setUsername] = useState<string>("");
 
-  const handleTokenSubmit = (submittedToken: string, submittedUsername?: string) => {
+  const handleTokenSubmit = (
+    submittedToken: string,
+    submittedUsername?: string
+  ) => {
     setToken(submittedToken);
     setUsername(submittedUsername || "");
   };
@@ -27,7 +30,11 @@ function App() {
           {!(token || username) ? (
             <TokenInput onSubmit={handleTokenSubmit} />
           ) : (
-            <Dashboard token={token} username={username} onLogout={handleLogout} />
+            <Dashboard
+              token={token}
+              username={username}
+              onLogout={handleLogout}
+            />
           )}
         </TooltipProvider>
       </ThemeProvider>

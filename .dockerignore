@@ -5,7 +5,6 @@ npm-debug.log
 .env
 .env.local
 .env.*.local
-dist
 build
 .DS_Store
 .vscode
@@ -25,4 +24,3 @@ README.md
 PULL_REQUEST.md
 SETUP_GUIDE.md
 ideas.md
-patches
