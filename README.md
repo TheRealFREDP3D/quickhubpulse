@@ -1,5 +1,11 @@
 # GitHub Stats Dashboard - Simplified
 
+![Header](image/header.jpg)
+
+
+![GitHub License](https://img.shields.io/github/license/TheRealFREDP3D/github-stats-dashboard)
+![GitHub Repo Size](https://img.shields.io/github/repo-size/TheRealFREDP3D/github-stats-dashboard)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/TheRealFREDP3D/github-stats-dashboard)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/42159a2a-49a0-4155-bec7-8f5dff3f7745/deploy-status)](https://app.netlify.com/projects/gitmystats/deploys)
 
 A streamlined, modern dashboard for quick repository overview with detailed insights. Built with React 19, Tailwind CSS, and Vite.

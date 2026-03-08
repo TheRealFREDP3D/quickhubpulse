@@ -10,6 +10,7 @@ import {
 import { RepositoryCard } from "@/components/RepositoryCard";
 import { RepositoryDetail } from "@/components/RepositoryDetail";
 import { useGitHubAPI, Repository } from "@/hooks/useGitHubAPI";
+import { ErrorCode } from "@/errors";
 import { useLocalStats } from "@/hooks/useLocalStats";
 import { Github, LogOut, Search, Keyboard, Save } from "lucide-react";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
@@ -30,7 +31,7 @@ export default function Dashboard({
   username,
   onLogout,
 }: DashboardProps) {
-  const { repositories, loading, error, refetch, fetchDetailedStats } =
+  const { repositories, loading, error, errorCode, refetch, fetchDetailedStats } =
     useGitHubAPI(token, username);
   const { saveStats } = useLocalStats();
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
@@ -265,7 +266,7 @@ export default function Dashboard({
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
             <p className="font-semibold mb-2">Error loading repositories</p>
             <div className="text-sm whitespace-pre-line">{error}</div>
-            {error.includes("403") && (
+            {(errorCode === ErrorCode.API_FORBIDDEN || errorCode === ErrorCode.API_RATE_LIMIT) && (
               <div className="mt-3 p-3 bg-red-100 rounded-md">
                 <p className="text-xs font-medium mb-1">Quick fixes:</p>
                 <ul className="text-xs space-y-1 list-disc list-inside">

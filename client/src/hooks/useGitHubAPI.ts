@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ErrorCode, createGitHubError, getErrorCodeFromStatus, GitHubError } from "@/errors";
 
 export interface Repository {
   id: number;
@@ -30,6 +31,7 @@ interface UseGitHubAPIReturn {
   repositories: Repository[];
   loading: boolean;
   error: string | null;
+  errorCode: ErrorCode | null;
   refetch: () => Promise<void>;
   fetchDetailedStats: (repo: Repository) => Promise<Repository>;
 }
@@ -93,7 +95,7 @@ const buildReposUrl = (token?: string, username?: string): string => {
 
     // Validate username format
     if (!validateUsername(trimmedUsername)) {
-      throw new Error("Invalid GitHub username format");
+      throw createGitHubError(ErrorCode.INVALID_USERNAME_FORMAT);
     }
 
     // Encode username for safe URL construction
@@ -118,29 +120,14 @@ export function useGitHubAPI(
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<ErrorCode | null>(null);
 
   const fetchWithAuth = async (url: string) => {
     const response = await fetch(url, { headers: buildHeaders(token) });
     if (!response.ok) {
-      let errorMessage = `GitHub API error: ${response.status} ${response.statusText}`;
-
-      if (response.status === 403) {
-        if (token) {
-          errorMessage =
-            "GitHub API error: 403 Forbidden. This could be due to:\n• Invalid or expired access token\n• Token lacks required permissions (repo or public_repo scope)\n• API rate limit exceeded";
-        } else {
-          errorMessage =
-            "GitHub API error: 403 Forbidden. This could be due to:\n• API rate limit exceeded for unauthenticated requests\n• Try again in a few minutes or use an access token";
-        }
-      } else if (response.status === 404) {
-        errorMessage =
-          "GitHub API error: 404 Not Found. The user may not exist or has no public repositories.";
-      } else if (response.status === 401) {
-        errorMessage =
-          "GitHub API error: 401 Unauthorized. The access token is invalid or has been revoked.";
-      }
-
-      throw new Error(errorMessage);
+      const errorCode = getErrorCodeFromStatus(response.status, !!token);
+      const error = createGitHubError(errorCode, response.status);
+      throw error;
     }
     return response.json();
   };
@@ -294,17 +281,20 @@ export function useGitHubAPI(
       setRepositories(basicRepos);
     } catch (err) {
       let errorMessage = "Failed to fetch repositories";
+      let errCode: ErrorCode | null = null;
 
-      if (err instanceof Error) {
-        if (err.message === "Invalid GitHub username format") {
-          errorMessage =
-            "Invalid GitHub username. Usernames must be 1-39 characters long and can only contain letters, numbers, and hyphens (cannot start or end with a hyphen).";
-        } else {
-          errorMessage = err.message;
-        }
+      if (err instanceof Error && 'code' in err) {
+        // It's a structured GitHubError
+        const githubError = err as GitHubError;
+        errorMessage = githubError.message;
+        errCode = githubError.code;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+        errCode = ErrorCode.UNKNOWN_ERROR;
       }
 
       setError(errorMessage);
+      setErrorCode(errCode);
       console.error("Error fetching repositories:", err);
     } finally {
       setLoading(false);
@@ -321,6 +311,7 @@ export function useGitHubAPI(
     repositories,
     loading,
     error,
+    errorCode,
     refetch: fetchRepositories,
     fetchDetailedStats,
   };
