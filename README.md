@@ -14,6 +14,23 @@ A streamlined, modern dashboard for quick repository overview with detailed insi
 
 [https://gitmystats.netlify.app/](https://gitmystats.netlify.app/)
 
+## Screenshots
+
+### Token Authentication
+Enter your GitHub Personal Access Token to get started:
+
+![Enter your PAT](image/enter-token.png)
+
+### Repository Dashboard
+View all your repositories in a responsive grid layout with key metrics:
+
+![Repositories Grid](image/dashboard.png)
+
+### Detailed Statistics
+Click any repository card to see comprehensive statistics and traffic trends:
+
+![Detailed Statistics](image/detais.png)
+
 ## Features
 
 ### Repository Overview
@@ -82,18 +99,9 @@ The application will be available at `http://localhost:3000` (or another port if
 
 1. Open the dashboard in your browser
 2. Paste your GitHub Personal Access Token in the input field
-
-![Enter your PAT](image/enter-token.png)
-
 3. Click "Load Repositories"
 4. Browse your repositories in the grid
-
-![Repositories Grid](image/dashboard.png)
-
 5. Click any card to view detailed statistics and traffic trends
-
-![Detailled Statistics](image/detais.png)
-
 6. Use the search bar to filter repositories by name or description
 
 ## Project Structure
