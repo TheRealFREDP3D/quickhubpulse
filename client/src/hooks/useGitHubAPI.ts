@@ -40,9 +40,9 @@ const GITHUB_API_BASE = "https://api.github.com";
 class ConcurrencyLimiter {
   private running = 0;
   private queue: (() => void)[] = [];
-  
+
   constructor(private limit: number = 5) {}
-  
+
   async execute<T>(task: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       const run = async () => {
@@ -57,7 +57,7 @@ class ConcurrencyLimiter {
           this.processQueue();
         }
       };
-      
+
       if (this.running < this.limit) {
         run();
       } else {
@@ -65,7 +65,7 @@ class ConcurrencyLimiter {
       }
     });
   }
-  
+
   private processQueue() {
     if (this.queue.length > 0 && this.running < this.limit) {
       const next = this.queue.shift();
@@ -90,12 +90,12 @@ const validateUsername = (username: string): boolean => {
 const buildReposUrl = (token?: string, username?: string): string => {
   if (username) {
     const trimmedUsername = username.trim();
-    
+
     // Validate username format
     if (!validateUsername(trimmedUsername)) {
       throw new Error("Invalid GitHub username format");
     }
-    
+
     // Encode username for safe URL construction
     const safeUsername = encodeURIComponent(trimmedUsername);
     return `${GITHUB_API_BASE}/users/${safeUsername}/repos?sort=updated&per_page=100`;
@@ -111,7 +111,10 @@ const buildHeaders = (token?: string): Record<string, string> => ({
   ...(token ? { Authorization: `token ${token}` } : {}),
 });
 
-export function useGitHubAPI(token: string, username?: string): UseGitHubAPIReturn {
+export function useGitHubAPI(
+  token: string,
+  username?: string
+): UseGitHubAPIReturn {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,29 +123,37 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
     const response = await fetch(url, { headers: buildHeaders(token) });
     if (!response.ok) {
       let errorMessage = `GitHub API error: ${response.status} ${response.statusText}`;
-      
+
       if (response.status === 403) {
         if (token) {
-          errorMessage = "GitHub API error: 403 Forbidden. This could be due to:\n• Invalid or expired access token\n• Token lacks required permissions (repo or public_repo scope)\n• API rate limit exceeded";
+          errorMessage =
+            "GitHub API error: 403 Forbidden. This could be due to:\n• Invalid or expired access token\n• Token lacks required permissions (repo or public_repo scope)\n• API rate limit exceeded";
         } else {
-          errorMessage = "GitHub API error: 403 Forbidden. This could be due to:\n• API rate limit exceeded for unauthenticated requests\n• Try again in a few minutes or use an access token";
+          errorMessage =
+            "GitHub API error: 403 Forbidden. This could be due to:\n• API rate limit exceeded for unauthenticated requests\n• Try again in a few minutes or use an access token";
         }
       } else if (response.status === 404) {
-        errorMessage = "GitHub API error: 404 Not Found. The user may not exist or has no public repositories.";
+        errorMessage =
+          "GitHub API error: 404 Not Found. The user may not exist or has no public repositories.";
       } else if (response.status === 401) {
-        errorMessage = "GitHub API error: 401 Unauthorized. The access token is invalid or has been revoked.";
+        errorMessage =
+          "GitHub API error: 401 Unauthorized. The access token is invalid or has been revoked.";
       }
-      
+
       throw new Error(errorMessage);
     }
     return response.json();
   };
 
-  const fetchResponseWithOptionalAuth = async (url: string): Promise<Response> => {
+  const fetchResponseWithOptionalAuth = async (
+    url: string
+  ): Promise<Response> => {
     const response = await fetch(url, { headers: buildHeaders(token) });
     if (!response.ok) {
       // Log warning but don't throw - we'll handle fallbacks
-      console.warn(`GitHub API warning: ${response.status} ${response.statusText} for ${url}`);
+      console.warn(
+        `GitHub API warning: ${response.status} ${response.statusText} for ${url}`
+      );
     }
     return response;
   };
@@ -153,12 +164,12 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
       if (!response.ok) {
         return 0;
       }
-      
+
       const linkHeader = response.headers.get("Link");
       if (!linkHeader) {
         return 0;
       }
-      
+
       const match = linkHeader.match(/page=(\d+)>; rel="last"/);
       return match ? parseInt(match[1], 10) : 0;
     } catch (error) {
@@ -170,27 +181,31 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
 
   const fetchDetailedStats = async (repo: Repository): Promise<Repository> => {
     const cacheKey = `${repo.owner}/${repo.name}`;
-    
+
     // Check cache first
     if (statsCache.has(cacheKey)) {
       return statsCache.get(cacheKey)!;
     }
-    
+
     return statsLimiter.execute(async () => {
       try {
         // Skip expensive stats for public mode (no token)
         if (!token) {
           return repo;
         }
-        
+
         const { views, clones } = await getTrafficStats(repo, token);
-        
+
         // Fetch pull requests and issues counts with proper error handling
         const [pullsCount, issuesCount] = await Promise.all([
-          fetchCountWithFallback(`${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/pulls?state=all&per_page=1`),
-          fetchCountWithFallback(`${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/issues?state=all&per_page=1`),
+          fetchCountWithFallback(
+            `${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/pulls?state=all&per_page=1`
+          ),
+          fetchCountWithFallback(
+            `${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/issues?state=all&per_page=1`
+          ),
         ]);
-        
+
         // Format traffic data for charts
         const formatTrafficData = (data: any[]) => {
           return data.map((item: any) => ({
@@ -199,7 +214,7 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
             uniques: item.uniques,
           }));
         };
-        
+
         const detailedRepo: Repository = {
           ...repo,
           views: views.count || 0,
@@ -211,10 +226,10 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
           viewsData: formatTrafficData(views.views || []),
           clonesData: formatTrafficData(clones.clones || []),
         };
-        
+
         // Cache the result
         statsCache.set(cacheKey, detailedRepo);
-        
+
         return detailedRepo;
       } catch (error) {
         console.error(`Error fetching detailed stats for ${repo.name}:`, error);
@@ -279,15 +294,16 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
       setRepositories(basicRepos);
     } catch (err) {
       let errorMessage = "Failed to fetch repositories";
-      
+
       if (err instanceof Error) {
         if (err.message === "Invalid GitHub username format") {
-          errorMessage = "Invalid GitHub username. Usernames must be 1-39 characters long and can only contain letters, numbers, and hyphens (cannot start or end with a hyphen).";
+          errorMessage =
+            "Invalid GitHub username. Usernames must be 1-39 characters long and can only contain letters, numbers, and hyphens (cannot start or end with a hyphen).";
         } else {
           errorMessage = err.message;
         }
       }
-      
+
       setError(errorMessage);
       console.error("Error fetching repositories:", err);
     } finally {
@@ -301,5 +317,11 @@ export function useGitHubAPI(token: string, username?: string): UseGitHubAPIRetu
     }
   }, [token, username]);
 
-  return { repositories, loading, error, refetch: fetchRepositories, fetchDetailedStats };
+  return {
+    repositories,
+    loading,
+    error,
+    refetch: fetchRepositories,
+    fetchDetailedStats,
+  };
 }

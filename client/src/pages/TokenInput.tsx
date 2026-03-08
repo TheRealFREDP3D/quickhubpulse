@@ -19,7 +19,7 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
     const tokenValue = token.trim();
     const usernameValue = username.trim();
     const inputValue = isTokenMode ? tokenValue : usernameValue;
-    
+
     if (inputValue) {
       setLoading(true);
       // Small delay to show loading state
@@ -98,7 +98,11 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
                 type={useToken ? "password" : "text"}
                 placeholder={useToken ? "ghp_xxxxxxxxxxxxxxxxxxxx" : "octocat"}
                 value={useToken ? token : username}
-                onChange={e => (useToken ? setToken(e.target.value) : setUsername(e.target.value))}
+                onChange={e =>
+                  useToken
+                    ? setToken(e.target.value)
+                    : setUsername(e.target.value)
+                }
                 className="pl-10"
                 required
               />
@@ -114,14 +118,20 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             disabled={loading}
           >
-            {loading ? "Loading..." : useToken ? "Load Repositories" : "Fetch Public Repos"}
+            {loading
+              ? "Loading..."
+              : useToken
+                ? "Load Repositories"
+                : "Fetch Public Repos"}
           </Button>
         </form>
 
         {/* Instructions */}
         <div className="p-4 bg-white rounded-lg border border-slate-200">
           <h3 className="text-sm font-semibold text-slate-900 mb-3">
-            {useToken ? "How to get a Personal Access Token:" : "Using Username Mode:"}
+            {useToken
+              ? "How to get a Personal Access Token:"
+              : "Using Username Mode:"}
           </h3>
           {useToken ? (
             <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside">
@@ -144,10 +154,15 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
             </ol>
           ) : (
             <div className="text-xs text-slate-600 space-y-2">
-              <p>• Simply enter any GitHub username to view their public repositories</p>
+              <p>
+                • Simply enter any GitHub username to view their public
+                repositories
+              </p>
               <p>• No authentication required</p>
               <p>• Limited to public repository information only</p>
-              <p>• Traffic data and private stats are not available in this mode</p>
+              <p>
+                • Traffic data and private stats are not available in this mode
+              </p>
             </div>
           )}
         </div>

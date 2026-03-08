@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-07
+
+### Added
+
+- New `test` script in `package.json` to run Vitest.
+- Missing environment variables `VITE_OAUTH_PORTAL_URL` and `VITE_APP_ID` to `.env.example`.
+- Sample unit test for environment utility.
+
+### Changed
+
+- Updated `package.json` with correct author, repository, and homepage information.
+- Updated version to `1.1.0`.
+- Commented out analytics script in `index.html` to avoid build warnings when variables are missing.
+
+### Fixed
+
+- Build warnings related to undefined environment variables in `index.html`.
+
 ## [1.0.0] - 2025-02-18
+
+...
 
 ### Added
 
