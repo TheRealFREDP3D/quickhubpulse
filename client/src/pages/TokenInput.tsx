@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Github, Key, User } from "lucide-react";
+import { Github, Key, User, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { getLoginUrl } from "@/const";
 
 interface TokenInputProps {
   onSubmit: (token: string, username?: string) => void;
@@ -12,6 +13,8 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [useToken, setUseToken] = useState(true);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +37,22 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
     }
   };
 
+  const handleGitHubLogin = async () => {
+    setOauthError(null);
+    setOauthLoading(true);
+    try {
+      const loginUrl = await getLoginUrl();
+      window.location.href = loginUrl;
+    } catch (error) {
+      setOauthError(
+        error instanceof Error
+          ? error.message
+          : "Failed to initiate GitHub login"
+      );
+      setOauthLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -48,6 +67,42 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
           <p className="text-slate-600">
             Quick overview of all your repositories in one place
           </p>
+        </div>
+
+        {/* GitHub OAuth Button */}
+        <div className="mb-6">
+          <Button
+            onClick={handleGitHubLogin}
+            disabled={oauthLoading}
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center gap-2"
+          >
+            {oauthLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Github className="w-4 h-4" />
+                Login with GitHub
+              </>
+            )}
+          </Button>
+          {oauthError && (
+            <p className="text-xs text-red-600 mt-2 text-center">{oauthError}</p>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-300"></div>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-gradient-to-br from-slate-50 to-slate-100 px-2 text-slate-600">
+              Or continue with
+            </span>
+          </div>
         </div>
 
         {/* Form */}
