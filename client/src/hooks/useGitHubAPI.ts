@@ -236,10 +236,10 @@ export function useGitHubAPI(
 
     const [views, clones] = await Promise.all([
       fetchWithAuth(
-        `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/traffic/views`
+        `${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/traffic/views`
       ).catch(() => defaultViews),
       fetchWithAuth(
-        `${GITHUB_API_BASE}/repos/${repo.owner.login}/${repo.name}/traffic/clones`
+        `${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/traffic/clones`
       ).catch(() => defaultClones),
     ]);
 

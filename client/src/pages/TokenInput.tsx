@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Github, Key, User } from "lucide-react";
 import { useState } from "react";
+import { OAuthLoginButton } from "@/components/OAuthLoginButton";
 
 interface TokenInputProps {
   onSubmit: (token: string, username?: string) => void;
@@ -52,7 +53,7 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-          {/* Toggle between token and username */}
+          {/* Toggle between token, username, and OAuth */}
           <div className="flex gap-2 p-1 bg-slate-100 rounded-lg">
             <button
               type="button"
@@ -125,6 +126,27 @@ export default function TokenInput({ onSubmit }: TokenInputProps) {
                 : "Fetch Public Repos"}
           </Button>
         </form>
+
+        {/* OAuth Login Section */}
+        <div className="mb-8">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-300" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-50 px-2 text-slate-500">Or</span>
+            </div>
+          </div>
+          <div className="mt-4">
+            <OAuthLoginButton 
+              onLoginStart={() => setLoading(true)}
+              onLoginError={(error) => {
+                setLoading(false);
+                // OAuthLoginButton already displays the error
+              }}
+            />
+          </div>
+        </div>
 
         {/* Instructions */}
         <div className="p-4 bg-white rounded-lg border border-slate-200">
