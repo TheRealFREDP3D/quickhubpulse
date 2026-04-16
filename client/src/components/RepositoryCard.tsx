@@ -71,7 +71,7 @@ export function RepositoryCard({
           <div>
             <div className="text-xs text-slate-500">Views</div>
             <div className="text-sm font-semibold text-slate-900">
-              {repo.views}
+              {repo.views ?? 0}
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@ export function RepositoryCard({
           <div>
             <div className="text-xs text-slate-500">Clones</div>
             <div className="text-sm font-semibold text-slate-900">
-              {repo.clones}
+              {repo.clones ?? 0}
             </div>
           </div>
         </div>
@@ -109,11 +109,11 @@ export function RepositoryCard({
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1">
             <GitPullRequest className="w-3.5 h-3.5 text-purple-500" />
-            <span className="text-slate-600">{repo.totalPulls}</span>
+            <span className="text-slate-600">{repo.totalPulls ?? 0}</span>
           </div>
           <div className="flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-            <span className="text-slate-600">{repo.totalIssues}</span>
+            <span className="text-slate-600">{repo.totalIssues ?? 0}</span>
           </div>
         </div>
         {repo.language && (

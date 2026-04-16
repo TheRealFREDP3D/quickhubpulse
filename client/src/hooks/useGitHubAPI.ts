@@ -217,6 +217,13 @@ export function useGitHubAPI(
         // Cache the result
         statsCache.set(cacheKey, detailedRepo);
 
+        // Update the repository in the main list
+        setRepositories(prevRepos => 
+          prevRepos.map(r => 
+            r.id === repo.id ? { ...r, ...detailedRepo } : r
+          )
+        );
+
         return detailedRepo;
       } catch (error) {
         console.error(`Error fetching detailed stats for ${repo.name}:`, error);
@@ -244,6 +251,20 @@ export function useGitHubAPI(
     ]);
 
     return { views, clones };
+  };
+
+  const fetchAllDetailedStats = async (repos: Repository[]): Promise<Repository[]> => {
+    // Skip expensive stats for public mode (no token)
+    if (!token) {
+      return repos;
+    }
+
+    // Fetch detailed stats for all repositories with concurrency control
+    const updatedRepos = await Promise.all(
+      repos.map(repo => fetchDetailedStats(repo))
+    );
+
+    return updatedRepos;
   };
 
   const fetchRepositories = async () => {
@@ -279,6 +300,17 @@ export function useGitHubAPI(
       }));
 
       setRepositories(basicRepos);
+
+      // Fetch detailed stats for all repositories if token is available
+      if (token) {
+        try {
+          const reposWithStats = await fetchAllDetailedStats(basicRepos);
+          setRepositories(reposWithStats);
+        } catch (statsError) {
+          console.warn("Failed to fetch detailed stats for all repositories:", statsError);
+          // Keep basic repos if detailed stats fail
+        }
+      }
     } catch (err) {
       let errorMessage = "Failed to fetch repositories";
       let errCode: ErrorCode | null = null;
