@@ -115,4 +115,3 @@ temp/
 /.prettierignore
 /.prettierrc
 /package-lock.json
-/.env
