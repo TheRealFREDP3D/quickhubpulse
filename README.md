@@ -1,11 +1,11 @@
-# GitHub Stats Dashboard - Simplified
+# QuickHubPulse - GitHub Stats Dashboard
 
 ![Header](image/header.jpg)
 
 
-![GitHub License](https://img.shields.io/github/license/TheRealFREDP3D/github-stats-dashboard)
-![GitHub Repo Size](https://img.shields.io/github/repo-size/TheRealFREDP3D/github-stats-dashboard)
-![GitHub Last Commit](https://img.shields.io/github/last-commit/TheRealFREDP3D/github-stats-dashboard)
+![GitHub License](https://img.shields.io/github/license/TheRealFREDP3D/QuickHubPulse)
+![GitHub Repo Size](https://img.shields.io/github/repo-size/TheRealFREDP3D/QuickHubPulse)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/TheRealFREDP3D/QuickHubPulse)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/42159a2a-49a0-4155-bec7-8f5dff3f7745/deploy-status)](https://app.netlify.com/projects/quickhubpulse/deploys)
 
 A streamlined, modern dashboard for quick repository overview with detailed insights. Built with React 19, Tailwind CSS, and Vite.
@@ -61,6 +61,12 @@ Click any repository card to open a detailed modal with:
 - Smooth modal transitions using Framer Motion
 - Loading skeleton states
 
+---
+
+![Overview](image/Overview.png)
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -83,8 +89,8 @@ Click any repository card to open a detailed modal with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/TheRealFREDP3D/github-stats-dashboard
-cd github-stats-dashboard
+git clone https://github.com/TheRealFREDP3D/QuickHubPulse
+cd QuickHubPulse
 
 # Install dependencies
 pnpm install
