@@ -1,10 +1,17 @@
 import { Handler } from '@netlify/functions';
 
 export const handler: Handler = async (event: any) => {
+  console.log('github-login-url function called');
+  console.log('Environment check:', {
+    hasClientId: !!process.env.GITHUB_CLIENT_ID,
+    hasRedirectUri: !!process.env.GITHUB_REDIRECT_URI,
+  });
+
   try {
     const clientId = process.env.GITHUB_CLIENT_ID;
     
     if (!clientId) {
+      console.error('GITHUB_CLIENT_ID not set');
       return {
         statusCode: 500,
         body: JSON.stringify({ 
@@ -18,6 +25,8 @@ export const handler: Handler = async (event: any) => {
     
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,user&state=${state}`;
     
+    console.log('Generated auth URL successfully');
+    
     return {
       statusCode: 200,
       headers: {
@@ -29,7 +38,7 @@ export const handler: Handler = async (event: any) => {
     console.error("Error generating OAuth URL:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to generate OAuth URL" }),
+      body: JSON.stringify({ error: "Failed to generate OAuth URL", details: String(error) }),
     };
   }
 };

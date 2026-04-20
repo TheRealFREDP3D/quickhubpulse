@@ -69,7 +69,9 @@ export async function initiateGitHubLogin(): Promise<void> {
     const response = await fetch('/api/auth/github/login-url');
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('OAuth login error:', errorData);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorData.error || 'Unknown error'}`);
     }
     
     const data = await response.json();
@@ -83,6 +85,7 @@ export async function initiateGitHubLogin(): Promise<void> {
     
   } catch (error) {
     // Re-throw with user-friendly message
+    console.error('OAuth login failed:', error);
     throw new Error(handleOAuthError(error));
   }
 }
