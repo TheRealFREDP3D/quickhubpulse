@@ -5,14 +5,16 @@ import { initiateGitHubLogin, createOAuthError, OAuthError } from "@/utils/oauth
 
 interface OAuthLoginButtonProps {
   onLoginStart?: () => void;
+  onLoginSuccess?: (token: string) => void;
   onLoginError?: (error: OAuthError) => void;
   disabled?: boolean;
 }
 
-export function OAuthLoginButton({ 
-  onLoginStart, 
-  onLoginError, 
-  disabled = false 
+export function OAuthLoginButton({
+  onLoginStart,
+  onLoginSuccess,
+  onLoginError,
+  disabled = false,
 }: OAuthLoginButtonProps) {
   const [loading, setLoading] = useState(false);
   const [oauthError, setOauthError] = useState<OAuthError | null>(null);
@@ -20,13 +22,13 @@ export function OAuthLoginButton({
   const handleOAuthLogin = async () => {
     setLoading(true);
     setOauthError(null);
-    
+
     onLoginStart?.();
 
     try {
-      await initiateGitHubLogin();
+      const token = await initiateGitHubLogin();
+      onLoginSuccess?.(token);
     } catch (error) {
-      // Create a safe error object that doesn't expose sensitive details
       const safeError = createOAuthError(error);
       setOauthError(safeError);
       onLoginError?.(safeError);
@@ -45,8 +47,7 @@ export function OAuthLoginButton({
         <Github className="w-4 h-4 mr-2" />
         {loading ? "Connecting to GitHub..." : "Login with GitHub"}
       </Button>
-      
-      {/* Display user-friendly error message */}
+
       {oauthError && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-700">{oauthError.message}</p>
