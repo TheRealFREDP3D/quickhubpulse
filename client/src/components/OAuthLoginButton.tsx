@@ -5,14 +5,12 @@ import { initiateGitHubLogin, createOAuthError, OAuthError } from "@/utils/oauth
 
 interface OAuthLoginButtonProps {
   onLoginStart?: () => void;
-  onLoginSuccess?: (token: string) => void;
   onLoginError?: (error: OAuthError) => void;
   disabled?: boolean;
 }
 
 export function OAuthLoginButton({
   onLoginStart,
-  onLoginSuccess,
   onLoginError,
   disabled = false,
 }: OAuthLoginButtonProps) {
@@ -26,8 +24,7 @@ export function OAuthLoginButton({
     onLoginStart?.();
 
     try {
-      const token = await initiateGitHubLogin();
-      onLoginSuccess?.(token);
+      await initiateGitHubLogin();
     } catch (error) {
       const safeError = createOAuthError(error);
       setOauthError(safeError);

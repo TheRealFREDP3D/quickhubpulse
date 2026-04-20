@@ -1,14 +1,14 @@
 /**
- * OAuth utilities using Netlify's built-in authentication
- * https://docs.netlify.com/manage/security/secure-access-to-sites/oauth-provider-tokens/
+ * OAuth utilities using GitHub App web application flow
+ * https://docs.github.com/en/apps/creating-github-apps/writing-code-for-a-github-app/building-a-login-with-github-button-with-a-github-app
  */
-
-import netlify from "netlify-auth-providers";
 
 // Known OAuth error types with user-friendly messages
 const OAUTH_ERROR_MESSAGES = {
   NETWORK_ERROR: "Unable to connect to GitHub. Please check your internet connection and try again.",
+  INVALID_CLIENT: "GitHub App configuration error. Please contact support.",
   ACCESS_DENIED: "GitHub access was denied. Please try again and ensure you grant the necessary permissions.",
+  INVALID_SCOPE: "Requested permissions are not valid. Please contact support.",
   SERVER_ERROR: "GitHub is experiencing issues. Please try again in a few minutes.",
   TEMPORARILY_UNAVAILABLE: "GitHub services are temporarily unavailable. Please try again later.",
   UNKNOWN_ERROR: "An unexpected error occurred during GitHub authentication. Please try again.",
@@ -18,22 +18,34 @@ type OAuthErrorType = keyof typeof OAUTH_ERROR_MESSAGES;
 
 /**
  * Maps raw OAuth errors to user-friendly messages
+ * Logs detailed errors for debugging while showing safe messages to users
  */
 export function handleOAuthError(error: unknown): string {
+  // Log the full error for debugging purposes
   console.error("OAuth error occurred:", error);
 
+  // If it's not an Error object, treat as unknown error
   if (!(error instanceof Error)) {
     return OAUTH_ERROR_MESSAGES.UNKNOWN_ERROR;
   }
 
   const errorMessage = error.message.toLowerCase();
 
+  // Map known error patterns to user-friendly messages
   if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
     return OAUTH_ERROR_MESSAGES.NETWORK_ERROR;
   }
 
   if (errorMessage.includes("access_denied")) {
     return OAUTH_ERROR_MESSAGES.ACCESS_DENIED;
+  }
+
+  if (errorMessage.includes("invalid_client") || errorMessage.includes("client_id")) {
+    return OAUTH_ERROR_MESSAGES.INVALID_CLIENT;
+  }
+
+  if (errorMessage.includes("invalid_scope")) {
+    return OAUTH_ERROR_MESSAGES.INVALID_SCOPE;
   }
 
   if (errorMessage.includes("server_error") || errorMessage.includes("internal server error")) {
@@ -44,39 +56,38 @@ export function handleOAuthError(error: unknown): string {
     return OAUTH_ERROR_MESSAGES.TEMPORARILY_UNAVAILABLE;
   }
 
+  // Default to generic message for unknown errors
   return OAUTH_ERROR_MESSAGES.UNKNOWN_ERROR;
 }
 
 /**
- * Initiates GitHub OAuth login using Netlify's built-in authentication
- * Returns the access token on success
+ * Initiates GitHub OAuth login using GitHub App web application flow
+ * Redirects user to GitHub authorization page
  */
-export async function initiateGitHubLogin(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const authenticator = new netlify.default({});
+export async function initiateGitHubLogin(): Promise<void> {
+  try {
+    // Call Netlify function to get OAuth URL
+    const response = await fetch("/api/auth/github/login-url");
 
-    authenticator.authenticate(
-      {
-        provider: "github",
-        scope: "repo,user",
-      },
-      (error: Error | null, data: { token: string } | null) => {
-        if (error) {
-          console.error("OAuth authentication failed:", error);
-          reject(new Error(handleOAuthError(error)));
-          return;
-        }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("OAuth login error:", errorData);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorData.error || "Unknown error"}`);
+    }
 
-        if (!data || !data.token) {
-          reject(new Error(OAUTH_ERROR_MESSAGES.UNKNOWN_ERROR));
-          return;
-        }
+    const data = await response.json();
 
-        console.log("OAuth authentication successful");
-        resolve(data.token);
-      }
-    );
-  });
+    if (!data.url) {
+      throw new Error("No OAuth URL received from server");
+    }
+
+    // Redirect to GitHub OAuth
+    window.location.href = data.url;
+  } catch (error) {
+    // Re-throw with user-friendly message
+    console.error("OAuth login failed:", error);
+    throw new Error(handleOAuthError(error));
+  }
 }
 
 /**
@@ -98,7 +109,7 @@ export function createOAuthError(error: unknown): OAuthError {
   return {
     message,
     type,
-    originalError: error,
+    originalError: error, // Store for debugging but don't expose to UI
   };
 }
 
@@ -118,6 +129,14 @@ function determineErrorType(error: unknown): OAuthErrorType {
 
   if (errorMessage.includes("access_denied")) {
     return "ACCESS_DENIED";
+  }
+
+  if (errorMessage.includes("invalid_client") || errorMessage.includes("client_id")) {
+    return "INVALID_CLIENT";
+  }
+
+  if (errorMessage.includes("invalid_scope")) {
+    return "INVALID_SCOPE";
   }
 
   if (errorMessage.includes("server_error") || errorMessage.includes("internal server error")) {
