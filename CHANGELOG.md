@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Overview screenshot to README.md for better project visualization
+- Meta description tag to index.html for improved SEO
+
+### Fixed
+
+- Updated HTML title in client/index.html to reflect QuickHubPulse branding
+- Moved Netlify OAuth script to end of body with defer attribute for improved page load performance
 
 ## [1.1.0] - 2026-03-07
 
