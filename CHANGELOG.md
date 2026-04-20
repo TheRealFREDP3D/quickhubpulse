@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-20
+
+### Added
+
+- **GitHub App Web Application Flow**: Migrated authentication to GitHub App web application flow for improved OAuth handling
+- **Netlify Managed GitHub OAuth**: Integrated Netlify managed GitHub OAuth for seamless authentication
+- **Google Tag Manager**: Integrated Google Tag Manager for analytics tracking
+
+### Changed
+
+- Simplified GitHub OAuth flow and cleaned up handlers
+- Improved OAuth error handling and redirects
+
+### Fixed
+
+- Enhanced GitHub OAuth error handling and redirect logic
+
 ## [1.2.0] - 2026-04-20
 
 ### Changed
