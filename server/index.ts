@@ -22,6 +22,55 @@ async function startServer() {
 
   app.use(express.json());
 
+  // OAuth endpoints
+  app.get("/api/auth/github/login-url", (_req, res) => {
+    try {
+      // Note: In a production environment, you would:
+      // 1. Store your GitHub OAuth client ID and secret in environment variables
+      // 2. Generate a random state parameter for security
+      // 3. Include the proper redirect URI
+      
+      const clientId = process.env.GITHUB_CLIENT_ID;
+      if (!clientId) {
+        return res.status(500).json({ 
+          error: "GitHub OAuth not configured. Please set GITHUB_CLIENT_ID environment variable." 
+        });
+      }
+
+      const redirectUri = process.env.GITHUB_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:3000'}/auth/github/callback`;
+      const state = Math.random().toString(36).substring(2, 15); // Simple state for demo
+      
+      const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,user&state=${state}`;
+      
+      res.json({ url: authUrl });
+    } catch (error) {
+      console.error("Error generating OAuth URL:", error);
+      res.status(500).json({ error: "Failed to generate OAuth URL" });
+    }
+  });
+
+  // OAuth callback handler
+  app.get("/auth/github/callback", (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code) {
+        return res.status(400).send("Authorization code not provided");
+      }
+
+      // In a production environment, you would:
+      // 1. Exchange the code for an access token using GitHub's API
+      // 2. Store the token securely
+      // 3. Redirect back to the frontend with the token or session
+      
+      // For now, redirect to the frontend with a message
+      res.redirect(`/?oauth=success&code=${code}&state=${state}`);
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      res.redirect(`/?oauth=error`);
+    }
+  });
+
   // Save repository stats
   app.post("/api/stats", (req, res) => {
     try {

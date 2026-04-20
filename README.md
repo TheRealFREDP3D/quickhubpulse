@@ -115,9 +115,13 @@ client/
     hooks/          ← Custom React hooks (useGitHubAPI)
     contexts/       ← React contexts (ThemeContext)
     lib/            ← Utility functions
+    utils/          ← Utility functions (OAuth, error handling)
     App.tsx         ← Main app component
     main.tsx        ← React entry point
     index.css       ← Global styles and theme
+server/
+  index.ts         ← Express.js backend for stats persistence and OAuth
+data/              ← Local storage for statistics (created automatically)
 ```
 
 ## Key Components
@@ -144,6 +148,7 @@ Custom hook managing GitHub API calls, data fetching, and state management.
 
 ## Technology Stack
 
+### Frontend
 - **React 19**: UI framework
 - **Tailwind CSS 4**: Styling
 - **Vite**: Build tool and dev server
@@ -152,6 +157,10 @@ Custom hook managing GitHub API calls, data fetching, and state management.
 - **Lucide React**: Icons
 - **shadcn/ui**: UI components
 - **date-fns**: Date formatting
+
+### Backend
+- **Express.js**: Minimal server for local stats persistence and OAuth
+- **Node.js**: Runtime environment
 
 ## API Integration
 
@@ -165,6 +174,57 @@ The dashboard uses the GitHub REST API to fetch:
 - Issues (`GET /repos/{owner}/{repo}/issues`)
 
 All API calls are made directly from the browser to GitHub. Your token is stored locally and never sent to any server except GitHub.
+
+## Authentication Methods
+
+The dashboard supports three authentication methods:
+
+### 1. Personal Access Token (Recommended)
+- Enter your GitHub Personal Access Token directly
+- Full access to private repositories and traffic data
+- Token is stored locally in browser storage only
+
+### 2. Username Only
+- Enter any GitHub username to view public repositories
+- No authentication required
+- Limited to public repository information only
+- Traffic data and private stats are not available
+
+### 3. GitHub OAuth (Development Setup Required)
+- Click "Login with GitHub" to authenticate via OAuth
+- Requires backend configuration with GitHub OAuth App
+- Currently in development - requires environment variables:
+  - `GITHUB_CLIENT_ID`: Your GitHub OAuth App client ID
+  - `GITHUB_REDIRECT_URI`: OAuth callback URL (default: `http://localhost:3000/auth/github/callback`)
+
+To set up OAuth:
+1. Create a GitHub OAuth App at [GitHub Settings → Developer settings → OAuth Apps](https://github.com/settings/applications/new)
+2. Set the callback URL to `http://localhost:3000/auth/github/callback`
+3. Copy the Client ID to your environment variables
+4. The OAuth flow will redirect back to the app after authentication
+
+## Local Backend for Stats Persistence
+
+The application includes a lightweight Express.js backend for local statistics persistence:
+
+### Features
+- Save repository statistics locally with timestamps
+- Retrieve historical statistics
+- Get the most recent saved statistics
+- File-based storage using JSON
+
+### API Endpoints
+- `POST /api/stats` - Save new repository statistics
+- `GET /api/stats` - Get all historical statistics
+- `GET /api/stats/latest` - Get the most recent statistics
+
+### Usage
+The backend is automatically started when running `pnpm run dev`. Statistics can be saved manually using the "Save Stats" button in the dashboard, which stores the current repository data locally for future reference.
+
+### Data Storage
+Statistics are stored in `data/repository-stats.json` in the project root. Each entry includes:
+- Timestamp when the statistics were saved
+- Complete repository data including metrics and traffic information
 
 ## Design Philosophy
 
