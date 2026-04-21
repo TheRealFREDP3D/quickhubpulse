@@ -104,6 +104,15 @@ export function RepositoryCard({
         </div>
       </div>
 
+      {/* Traffic Data Unavailable Warning */}
+      {repo.trafficDataUnavailable && (
+        <div className="mb-4 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-xs text-amber-700">
+            Traffic data unavailable - requires push access
+          </p>
+        </div>
+      )}
+
       {/* Footer with PRs, Issues, and Language */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 text-xs">

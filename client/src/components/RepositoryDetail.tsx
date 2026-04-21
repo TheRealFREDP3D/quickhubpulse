@@ -160,6 +160,13 @@ export function RepositoryDetail({
                       <p className="text-xs text-red-700">{error}</p>
                     </div>
                   )}
+                  {currentRepo.trafficDataUnavailable && !loading && (
+                    <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-700">
+                        Traffic data (views/clones) is unavailable. This is only available for repositories where you have push access.
+                      </p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-blue-50 rounded-lg p-3">
                       <div className="flex items-center gap-1 mb-1">

@@ -25,6 +25,8 @@ export interface Repository {
   totalIssues?: number;
   viewsData?: Array<{ date: string; count: number; uniques: number }>;
   clonesData?: Array<{ date: string; count: number; uniques: number }>;
+  // Flag to indicate if traffic data is unavailable due to permissions
+  trafficDataUnavailable?: boolean;
 }
 
 interface UseGitHubAPIReturn {
@@ -125,6 +127,7 @@ export function useGitHubAPI(
   const fetchWithAuth = async (url: string) => {
     const response = await fetch(url, { headers: buildHeaders(token) });
     if (!response.ok) {
+      console.error(`[GitHub API] Error fetching ${url}:`, response.status, response.statusText);
       const errorCode = getErrorCodeFromStatus(response.status, !!token);
       const error = createGitHubError(errorCode, response.status);
       throw error;
@@ -181,7 +184,7 @@ export function useGitHubAPI(
           return repo;
         }
 
-        const { views, clones } = await getTrafficStats(repo, token);
+        const { views, clones, unavailable } = await getTrafficStats(repo, token);
 
         // Fetch pull requests and issues counts with proper error handling
         const [pullsCount, issuesCount] = await Promise.all([
@@ -212,6 +215,7 @@ export function useGitHubAPI(
           totalIssues: issuesCount,
           viewsData: formatTrafficData(views.views || []),
           clonesData: formatTrafficData(clones.clones || []),
+          trafficDataUnavailable: unavailable,
         };
 
         // Cache the result
@@ -235,22 +239,39 @@ export function useGitHubAPI(
   const getTrafficStats = async (
     repo: any,
     token?: string
-  ): Promise<{ views: TrafficViews; clones: TrafficClones }> => {
+  ): Promise<{ views: TrafficViews; clones: TrafficClones; unavailable: boolean }> => {
     const defaultViews = { count: 0, uniques: 0, views: [] };
     const defaultClones = { count: 0, uniques: 0, clones: [] };
 
-    if (!token) return { views: defaultViews, clones: defaultClones };
+    if (!token) {
+      return { views: defaultViews, clones: defaultClones, unavailable: true };
+    }
+
+    let viewsUnavailable = false;
+    let clonesUnavailable = false;
 
     const [views, clones] = await Promise.all([
       fetchWithAuth(
         `${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/traffic/views`
-      ).catch(() => defaultViews),
+      )
+        .then(data => data)
+        .catch((error) => {
+          console.error(`[Traffic Stats] Failed to fetch views for ${repo.owner}/${repo.name}:`, error);
+          viewsUnavailable = true;
+          return defaultViews;
+        }),
       fetchWithAuth(
         `${GITHUB_API_BASE}/repos/${repo.owner}/${repo.name}/traffic/clones`
-      ).catch(() => defaultClones),
+      )
+        .then(data => data)
+        .catch((error) => {
+          console.error(`[Traffic Stats] Failed to fetch clones for ${repo.owner}/${repo.name}:`, error);
+          clonesUnavailable = true;
+          return defaultClones;
+        }),
     ]);
 
-    return { views, clones };
+    return { views, clones, unavailable: viewsUnavailable || clonesUnavailable };
   };
 
   const fetchAllDetailedStats = async (repos: Repository[]): Promise<Repository[]> => {
